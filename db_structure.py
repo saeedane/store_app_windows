@@ -1,13 +1,13 @@
 from peewee import *
 import datetime
 
+
 db = MySQLDatabase('store_app', user='root', password='',
                    host='localhost')
 
 
 class Category(Model):
     category_name = CharField(40)
-    parent_id = IntegerField()
 
     class Meta:
         database = db
@@ -15,7 +15,6 @@ class Category(Model):
 
 class Suppliers(Model):
     suppliers_name = CharField(40)
-    parent_id = IntegerField()
 
     class Meta:
         database = db
@@ -35,6 +34,23 @@ class Product(Model):
 
     class Meta:
         database = db
+
+
+class Invoise(Model):
+    number_invoise = CharField(40)
+    created_date = DateTimeField(default=datetime.datetime.now)
+    customer = CharField(40)
+    conatct = CharField()
+    phone = CharField(20)
+    item = CharField(40)
+    quantity = IntegerField()
+    amoute = DoubleField()
+
+    class Meta:
+        database = db
+
+
+
 
 
 class Users(Model):
@@ -62,4 +78,4 @@ class UserPermission(Model):
 
 
 db.connect()
-db.create_tables([Category, Suppliers, Product, Users, UserPermission])
+db.create_tables([Category, Suppliers, Product,Invoise, Users, UserPermission])

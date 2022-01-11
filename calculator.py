@@ -1,38 +1,41 @@
 import operator
-from datetime import date
-import MySQLdb
-import pandas as pandas
-import qrcode
-from PyQt5 import QtPrintSupport, QtGui, uic
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+
+import random 
+import string    
+import mysql.connector
+from PyQt5 import QtPrintSupport, QtGui, uic,QtWidgets
 from PyQt5.QtCore import *
-from PyQt5.uic import loadUiType
-import sys
-import db_structure
-from PyQt5.uic import loadUi
-from PyQt5.QtPrintSupport import QPrintDialog, QPrinter, QPrintPreviewDialog
+from PyQt5.QtGui import *
+from PyQt5.QtPrintSupport import QPrinter, QPrintPreviewDialog
+from PyQt5.QtWidgets import *
+from dialog import Ui_Dialog as Form
 
 ui, _ = uic.loadUiType('mainwindow.ui')
+import db_structure
 
 # Calculator state.
-from PyQt5.uic import loadUi, loadUiType
+from PyQt5.uic import loadUi
 
 READY = 0
 INPUT = 1
 
+       
+
+
+
 
 class MainWindow(QMainWindow, ui):
     def db_connect(self):
-        self.db = MySQLdb.connect(user='root', password='',
-                                  host='localhost', database='store_app', charset='utf8')
+        
+       ## coneection between app and DB
+        self.db = mysql.connector.connect(host='localhost' ,user='root', password='', db='store_app')
         self.cur = self.db.cursor()
-
-        print('connect database')
+        print('Connection Accepted')
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         loadUi("mainwindow.ui", self)
+      
         self.db_connect()
         self.setupApp()
         self.home()
@@ -40,9 +43,8 @@ class MainWindow(QMainWindow, ui):
         self.calculator()
         self.showSuppliers()
         self.showProductStoke()
-        self.showProductSale()
-        self.showInvoiceSale()
         self.showUserData()
+        
 
     def setupApp(self):
         self.tabWidget.tabBar().hide()
@@ -63,17 +65,15 @@ class MainWindow(QMainWindow, ui):
         self.pushButton_55.clicked.connect(self.filterProduct)
         self.pushButton_53.clicked.connect(self.updateProduct)
         self.pushButton_52.clicked.connect(self.deleteProduct)
+        self.pushButton_42.clicked.connect(self.addProductDialog)
+
+        # open dialog invoise 
+        self.pushButton_13.clicked.connect(self.showInvoise)
         # button handle stock page
         self.pushButton_19.clicked.connect(self.addStock)
-        # button handle sale product  page
-        self.pushButton_20.clicked.connect(self.addProductSale)
+        # button handle add product 
 
-        # button handle sale product invoice
-        self.pushButton_59.clicked.connect(self.addInvoiceSale)
 
-        # button handle rest price
-        self.pushButton_13.clicked.connect(self.restPrice)
-        self.pushButton_14.clicked.connect(self.restCalculate)
 
         # button add permission add username
         self.pushButton_51.clicked.connect(self.userPermission)
@@ -101,6 +101,51 @@ class MainWindow(QMainWindow, ui):
 
     def setting(self):
         self.tabWidget.setCurrentIndex(6)
+
+
+   
+
+
+        
+    def showInvoise(self):
+        self.addInvoise()
+        dialog = QtWidgets.QDialog()
+        dialog.ui = Form()
+        dialog.ui.setupUi(dialog)
+        dialog.exec_()
+        dialog.show()
+
+
+    def addInvoise(self):
+        customer_name = self.lineEdit_35.text()
+        contact = self.lineEdit_42.text()
+        item = "this is product test "
+        quantity = 10
+
+        phone = self.lineEdit_42.text()
+        price_sell = self.lcdNumber_3.value()
+        amoute = self.lcdNumber_4.value()
+        S = 10  # number of characters in the string.  
+        # call random.choices() string module to find the string in Uppercase + numeric data.  
+        ran_invoise = ''.join(random.choices(string.ascii_uppercase + string.digits, k = S))    
+        self.cur.execute(
+            ''' insert into invoise (number_invoise, created_date, customer,conatct,phone,item,quantity,amoute) values(%s,%s,%s,%s,%s,%s,%s,%s)''',
+            (ran_invoise,"2022/20/25",customer_name, contact,phone, item,quantity,amoute))
+        self.db.commit()
+        
+
+      
+
+      
+    def addProductDialog(self):
+        from add_product import Ui_Add_Product as Form
+        add_product = QtWidgets.QDialog()
+        add_product.uiProduct = Form()
+        add_product.uiProduct.setupProductUi(add_product)
+        add_product.exec_()
+        add_product.show()
+        
+
 
     def checkLogin(self):
         username = self.lineEdit.text()
@@ -238,77 +283,9 @@ class MainWindow(QMainWindow, ui):
                 rowPosition = self.tableWidget_2.rowCount()
                 self.tableWidget_2.removeRow(rowPosition)
 
-    def showProductSale(self):
+  
 
-        self.tableWidget_4.setRowCount(0)
-        self.cur.execute(''' SELECT  * FROM productsale''')
-
-        data = self.cur.fetchall()
-        if data:
-            for row, item in enumerate(data):
-                self.tableWidget_4.insertRow(row)
-                for col, items in enumerate(item):
-                    self.tableWidget_4.setItem(row, col, QTableWidgetItem(str(items)))
-                    col += 1
-                rowPosition = self.tableWidget_4.rowCount()
-                self.tableWidget_4.removeRow(rowPosition)
-
-    def showInvoiceSale(self):
-        self.tableWidget_5.setRowCount(0)
-        self.cur.execute(''' SELECT  product_name, quantity, product_sum FROM productsale''')
-        data = self.cur.fetchall()
-        if data:
-            for row, item in enumerate(data):
-                self.tableWidget_5.insertRow(row)
-                for col, items in enumerate(item):
-                    self.tableWidget_5.setItem(row, col, QTableWidgetItem(str(items)))
-                    col += 1
-                rowPosition = self.tableWidget_5.rowCount()
-                self.tableWidget_5.removeRow(rowPosition)
-        self.sumPrice()
-        sumCal = self.lcdNumber_2.value()
-
-        self.label_22.setText('  اجمالي  :  ' + str(sumCal) + 'دج')
-
-        self.addProductSale()
-
-    def addInvoiceSale(self):
-        code = self.lineEdit_50.text()
-
-        datetime = QDateTime.currentDateTime()
-
-        Invoice_date = datetime.toString()
-        product_sale = [self.tableWidget_5.item(row, 2).text() for row in range(self.tableWidget_5.rowCount())]
-        product_name = [self.tableWidget_5.item(row, 0).text() for row in range(self.tableWidget_5.rowCount())]
-
-        quantity = [self.tableWidget_5.item(row, 1).text() for row in range(self.tableWidget_5.rowCount())]
-        restPrice = self.label_20.text()
-        if self.tableWidget_4.rowCount() >= 1:
-            self.pushButton_13.setEnabled(True)
-            for i in range(len(product_name)):
-                if code == 'رقم فاتورة' and code == '':
-                    print("لا تترد حقل فاتورة   فارغ ")
-                    message = QMessageBox()
-                    message.setIcon(QMessageBox.Warning)
-                    message.setText("لا تترد حقل فاتورة فارغ")
-                    message.exec_()
-                else:
-                    data = self.cur.execute('''INSERT INTO invoiceproduct(Invoice_code,Invoice_date,product_sale,product_name,restPrice, quantity, price)VALUES
-                                                (%s,%s,%s,%s,%s,%s,%s)''', (
-                        [code, Invoice_date, product_sale[i], product_name[i], restPrice, quantity[i], 20]))
-                    self.db.commit()
-                    if data:
-                        message = QMessageBox()
-                        message.setIcon(QMessageBox.Information)
-                        message.setText("تم اضافة فاتورة بنجاح ")
-                        message.exec_()
-                        self.showProductSale()
-
-
-
-                    else:
-                        print('i dont level work ')
-
+   
 
     def addProduct(self):
         self.showSuppliers()
@@ -590,10 +567,7 @@ class MainWindow(QMainWindow, ui):
         except Exception as e:
             print(e)
 
-    def sumPrice(self):
-        number = 0
-        sumPrice = [self.tableWidget_4.item(row, 3).text() for row in range(self.tableWidget_4.rowCount())]
-
+  
         for i in range(len(sumPrice)):
             number += int(sumPrice[i])
             self.lcdNumber_2.display(number)
@@ -617,14 +591,11 @@ class MainWindow(QMainWindow, ui):
                 self.printPriviewPdf()
                 self.label_22.setText('  اجمالي  :  ' + str(sumCal) + 'دج')
                 self.cur.execute(''' delete from productsale''')
-                self.pushButton_13.setEnabled(False)
 
                 self.db.commit()
                 self.label_22.setText('')
                 self.label_20.setText('')
                 self.lcdNumber_2.display('0')
-                self.tableWidget_5.setRowCount(0)
-                self.tableWidget_4.setRowCount(0)
 
 
 
@@ -756,9 +727,16 @@ class MainWindow(QMainWindow, ui):
                 self.display()
 
 
+
+
+
+
+
+
+
 if __name__ == '__main__':
     app = QApplication([])
-    app.setApplicationName("Calculon")
+    app.setApplicationName("Store  ")
 
     window = MainWindow()
     app.exec_()

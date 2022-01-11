@@ -12,5 +12,10 @@
 		<file>icon/store.png</file>
 		<file>icon/sing.png</file>
 		<file>icon/star.png</file>
+		<file>icon/print.png</file>
+		<file>icon/clear.png</file>
+		<file>icon/trash.png</file>
+		<file>icon/mony.png</file>
+
 	</qresource>
 </RCC>
